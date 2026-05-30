@@ -1140,15 +1140,20 @@ return (
 
 const server = http.createServer(async (req, res) => {
   try {
-    if (!requireAuth(req, res)) return;
-
     const url = new URL(req.url, `http://${req.headers.host}`);
 
+    // Health check sempre público.
+    // Isso evita a VPS matar o container quando BI_USER/BI_PASSWORD estiverem ativos.
     if (url.pathname === '/health') {
       return sendJson(res, {
         ok: true,
+        service: 'abcmusic-bi',
+        status: 'healthy',
       });
     }
+
+    // Daqui para baixo, exige senha se BI_USER e BI_PASSWORD estiverem configurados.
+    if (!requireAuth(req, res)) return;
 
     if (url.pathname === '/api/metrics') {
       const data = await loadMetrics(url.searchParams.get('force') === '1');
@@ -1176,8 +1181,8 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`abcMusic BI rodando em http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`abcMusic BI rodando em http://0.0.0.0:${PORT}`);
 });
 
 
